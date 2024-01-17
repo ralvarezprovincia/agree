@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use App\Models\Cards;
 use App\Models\User;
 use Carbon\Carbon;
@@ -75,7 +76,27 @@ class ControllerCards extends Controller
                     'message'  => 'Error al validar'
                 ], 200);
             }
+            $filename = null;
 
+            if ($request->hasFile('img')) {
+                $file = $request->file('img');
+                $docum = $file->getClientOriginalName('img');
+                $tmp = explode('.',$docum);
+                $extension = strtolower(end($tmp));
+
+                if($extension !== 'jpg' && $extension !== 'jpge' && $extension !== 'webp' && $extension !== 'gif' && $extension !== 'bmp' && $extension !== 'png' && $extension !== 'svg' && $extension !== 'jpeg'){
+                    return response()->json([
+                        'id'       => 0, 
+                        'code'     =>  200,
+                        'message'  => 'Error en el formato de la imagen.'
+                    ], 200);
+                }
+                
+                $filename = date('d_m_Y_h_i_s').$extension;
+                $path_full = Storage::putFileAs(
+                    'public/tarjeta/', $file, $filename
+                );
+            }
             $new = new Cards();
                 $new->name = $request->name;
                 $new->first_edition = $request->first_edition;
@@ -83,7 +104,7 @@ class ControllerCards extends Controller
                 $new->id_type = $request->type;
                 $new->id_rarity = $request->rarity;
                 $new->price = $request->price;
-                $new->img = $request->img;
+                $new->img = $filename;
                 // $new->id_user = Auth::user()->id;
                 $new->id_user = 1;
             $new->save();
@@ -95,7 +116,7 @@ class ControllerCards extends Controller
                 'message'  => 'Registro exitoso.'
             ], 200);
 
-        } catch (\Throwable $th) {
+        } catch (Throwable $th) {
             DB::rollBack();
             return response()->json([
                 'id'       => 0, 
@@ -136,6 +157,27 @@ class ControllerCards extends Controller
                     'message'  => 'Error al validar'
                 ], 200);
             }
+
+            if ($request->hasFile('img')) {
+                $file = $request->file('img');
+                $docum = $file->getClientOriginalName('img');
+                $tmp = explode('.',$docum);
+                $extension = strtolower(end($tmp));
+
+                if($extension !== 'jpg' && $extension !== 'jpge' && $extension !== 'webp' && $extension !== 'gif' && $extension !== 'bmp' && $extension !== 'png' && $extension !== 'svg' && $extension !== 'jpeg'){
+                    return response()->json([
+                        'id'       => 0, 
+                        'code'     =>  200,
+                        'message'  => 'Error en el formato de la imagen.'
+                    ], 200);
+                }
+                
+                $filename = date('d_m_Y_h_i_s').$extension;
+                $path_full = Storage::putFileAs(
+                    'public/tarjeta/', $file, $filename
+                );
+            }
+
             $update = Cards::find($request->id);
                 $update->name = $request->name;
                 $update->first_edition = $request->first_edition;
@@ -143,7 +185,9 @@ class ControllerCards extends Controller
                 $update->id_type = $request->type;
                 $update->id_rarity = $request->rarity;
                 $update->price = $request->price;
-                $update->img = $request->img;
+                if ($request->hasFile('file')) {
+                    $update->img = $filename;
+                }
                 $update->id_user = 1;
                 // $update->id_user = Auth::user()->id;
             $update->save();
